@@ -7,20 +7,21 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 
-@FeignClient(name="main-service", path = "/process")
+@FeignClient(name = "main-service", path = "/process", url = "${services.main-service.url}")
 public interface MainClient {
 
     /*
-
-HttpURLConnection class does not recognize the PATCH method as a valid type
-To resolve this, you must explicitly configure your Feign client to use a different HTTP client, such as Apache HttpClient 5 or OkHttp, which both support the PATCH method.
-
- */
+     * 
+     * HttpURLConnection class does not recognize the PATCH method as a valid type
+     * To resolve this, you must explicitly configure your Feign client to use a
+     * different HTTP client, such as Apache HttpClient 5 or OkHttp, which both
+     * support the PATCH method.
+     * 
+     */
 
     @PutMapping("/updateStatus/{status}/{fileSize}/{id}")
     ResponseEntity<String> updateStatusForProcess(
             @PathVariable("status") ProcessStatus status,
             @PathVariable("fileSize") String fileSize,
-            @PathVariable("id") String processId
-    );
+            @PathVariable("id") String processId);
 }
