@@ -71,7 +71,8 @@ public class MediaServiceImpl implements MediaService {
             tempInput = downloadFromGarage(uploadsBucket, processDto.storageInputPath());
             log.info("Temporary Input Path: {}", tempInput);
 
-            tempOutput = Files.createTempFile("output-", ".tmp");
+            tempOutput = Files.createTempFile("output-", processDto.fileName().substring(
+                    processDto.fileName().lastIndexOf('.')));
             log.info("Temporary Output Path: {}", tempOutput);
 
             String updatedCommand = processDto.command()
