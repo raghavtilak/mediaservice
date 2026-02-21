@@ -67,11 +67,6 @@ public class MediaServiceImpl implements MediaService {
 
         try {
 
-            double durationSeconds = probeAndParse(processDto.storageInputPath());
-            long totalDurationMs = (long) (durationSeconds * 1000);
-
-            log.info("Total Duration: {}", totalDurationMs);
-
             // Download input file from Garage to temp location
             tempInput = downloadFromGarage(uploadsBucket, processDto.storageInputPath());
             log.info("Temporary Input Path: {}", tempInput);
@@ -83,6 +78,10 @@ public class MediaServiceImpl implements MediaService {
                     .replace(processDto.storageInputPath(), tempInput.toString())
                     .replace(processDto.storageOutputPath(), tempOutput.toString());
             log.info("Replacing the input/output paths in the command with temp paths: {}", updatedCommand);
+
+            double durationSeconds = probeAndParse(tempInput.toString());
+            long totalDurationMs = (long) (durationSeconds * 1000);
+            log.info("Total Duration: {}", totalDurationMs);
 
             List<String> command = buildCommand(updatedCommand);
 
@@ -112,13 +111,10 @@ public class MediaServiceImpl implements MediaService {
         } catch (Exception ex) {
 
             ex.printStackTrace();
-            log.error("STACK TRACE: {}", Arrays.toString(ex.getStackTrace()));
 
             log.error("Processing failed. processId={}, errorMessage={}, errorClass={}",
                     processDto.id(),
-                    ex.getMessage(),
-                    ex.getClass().getName(),
-                    ex);
+                    ex.getMessage(), ex);
 
             mainClient.updateStatusForProcess(
                     ProcessStatus.FAILED,
