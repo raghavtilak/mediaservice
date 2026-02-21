@@ -112,8 +112,13 @@ public class MediaServiceImpl implements MediaService {
         } catch (Exception ex) {
 
             ex.printStackTrace();
+            log.error("STACK TRACE: {}", Arrays.toString(ex.getStackTrace()));
 
-            log.error("Processing failed. processId={}", processDto.id(), ex);
+            log.error("Processing failed. processId={}, errorMessage={}, errorClass={}",
+                    processDto.id(),
+                    ex.getMessage(),
+                    ex.getClass().getName(),
+                    ex);
 
             mainClient.updateStatusForProcess(
                     ProcessStatus.FAILED,
