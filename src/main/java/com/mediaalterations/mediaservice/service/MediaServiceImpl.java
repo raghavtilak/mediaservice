@@ -5,6 +5,8 @@ import com.mediaalterations.mediaservice.dto.ProcessDto;
 import com.mediaalterations.mediaservice.dto.ProcessStatus;
 import com.mediaalterations.mediaservice.exception.MediaProcessingException;
 import com.mediaalterations.mediaservice.feignClients.MainClient;
+import com.mediaalterations.mediaservice.feignClients.StorageClient;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,6 +50,8 @@ public class MediaServiceImpl implements MediaService {
     private String downloadsBucket;
 
     private final MainClient mainClient;
+    private final StorageClient storageClient;
+
     private final S3Client s3Client;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -111,7 +115,8 @@ public class MediaServiceImpl implements MediaService {
                     ffmpegCmdRes.getFinalFileSize(),
                     ffmpegCmdRes.getDuration(),
                     processDto.id().toString());
-
+            // Make the Storage file downloadable
+            storageClient.makeFileDownloadable(processDto.storageIdOutput());
             log.info("Processing completed successfully. processId={}", processDto.id());
 
         } catch (Exception ex) {
