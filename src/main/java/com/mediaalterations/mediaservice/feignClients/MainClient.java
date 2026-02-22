@@ -23,5 +23,6 @@ public interface MainClient {
     ResponseEntity<String> updateStatusForProcess(
             @PathVariable("status") ProcessStatus status,
             @PathVariable("fileSize") String fileSize,
+            @PathVariable("fileDuration") String fileDuration,
             @PathVariable("id") String processId);
 }

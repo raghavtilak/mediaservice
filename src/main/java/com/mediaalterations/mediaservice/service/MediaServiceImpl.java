@@ -60,7 +60,7 @@ public class MediaServiceImpl implements MediaService {
         log.info("Starting media processing. processId={}, inputPath={}",
                 processDto.id(), processDto.storageInputPath());
 
-        FfmpegCmdResponse ffmpegCmdRes = new FfmpegCmdResponse(0, "0 KB");
+        FfmpegCmdResponse ffmpegCmdRes = new FfmpegCmdResponse(0, "00:00:00:00.0000", "0 KB");
 
         Path tempInput = null;
         Path tempOutput = null;
@@ -89,9 +89,11 @@ public class MediaServiceImpl implements MediaService {
             boolean success = executeWithProgress(
                     command,
                     it -> {
-                        log.debug("Progress {}% for processId={}", it.getProgress(), processDto.id());
                         ffmpegCmdRes.setDuration(it.getDuration());
                         ffmpegCmdRes.setProgress(it.getProgress());
+                        ffmpegCmdRes.setFinalFileSize(it.getFinalFileSize());
+                        log.info("Progress update: {}% complete, duration={}, finalFileSize={} for processId={}",
+                                it.getProgress(), it.getDuration(), it.getFinalFileSize(), processDto.id());
                     },
                     totalDurationMs);
 
@@ -102,8 +104,11 @@ public class MediaServiceImpl implements MediaService {
             // Upload processed file back to Garage
             uploadToGarage(downloadsBucket, processDto.storageOutputPath(), tempOutput);
 
+            log.info("FFMPEG finalDuration={}, finalFileSize={} ms for processId={}", ffmpegCmdRes.getDuration(),
+                    ffmpegCmdRes.getFinalFileSize(), processDto.id());
             mainClient.updateStatusForProcess(
                     ProcessStatus.COMPLETED,
+                    ffmpegCmdRes.getFinalFileSize(),
                     ffmpegCmdRes.getDuration(),
                     processDto.id().toString());
 
@@ -119,6 +124,7 @@ public class MediaServiceImpl implements MediaService {
 
             mainClient.updateStatusForProcess(
                     ProcessStatus.FAILED,
+                    ffmpegCmdRes.getFinalFileSize(),
                     ffmpegCmdRes.getDuration(),
                     processDto.id().toString());
 
@@ -186,6 +192,7 @@ public class MediaServiceImpl implements MediaService {
                 String line;
                 int percent = 0;
                 String finalFileSize = "0 KB";
+                String finalFileDuration = "0";
 
                 while ((line = reader.readLine()) != null) {
                     if (line.startsWith("out_time_ms=")) {
@@ -198,10 +205,15 @@ public class MediaServiceImpl implements MediaService {
                         } catch (NumberFormatException e) {
                             log.warn("Could not parse out_time_ms");
                         }
-                    } else if (line.startsWith("total_size=")) {
+                    } else if (line.startsWith("size=")) {
                         try {
-                            long sizeInBytes = Long.parseLong(line.split("=")[1].trim());
-                            finalFileSize = formatFileSize(sizeInBytes);
+                            finalFileSize = line.split("=")[1].trim();
+                        } catch (NumberFormatException e) {
+                            log.warn("Could not parse total_size");
+                        }
+                    } else if (line.startsWith("out_time=")) {
+                        try {
+                            finalFileDuration = line.split("=")[1].trim();
                         } catch (NumberFormatException e) {
                             log.warn("Could not parse total_size");
                         }
@@ -210,7 +222,8 @@ public class MediaServiceImpl implements MediaService {
                         log.info("FFmpeg output: {}", line);
                     }
 
-                    progressCallback.accept(new FfmpegCmdResponse(Math.min(percent, 100), finalFileSize));
+                    progressCallback
+                            .accept(new FfmpegCmdResponse(Math.min(percent, 100), finalFileDuration, finalFileSize));
                 }
             }
 

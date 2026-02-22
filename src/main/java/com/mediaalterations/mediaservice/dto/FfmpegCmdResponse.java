@@ -10,4 +10,5 @@ import lombok.Setter;
 public class FfmpegCmdResponse {
     private int progress;
     private String duration;
+    private String finalFileSize;
 }
