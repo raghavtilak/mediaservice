@@ -212,7 +212,7 @@ public class MediaServiceImpl implements MediaService {
                         }
                     } else if (line.startsWith("size=")) {
                         try {
-                            finalFileSize = line.split("=")[1].trim();
+                            finalFileSize = line.split("=")[1].replace("time", "").trim();
                         } catch (NumberFormatException e) {
                             log.warn("Could not parse total_size");
                         }

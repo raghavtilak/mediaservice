@@ -19,7 +19,7 @@ public interface MainClient {
      * 
      */
 
-    @PutMapping("/updateStatus/{status}/{fileSize}/{id}")
+    @PutMapping("/updateStatus/{status}/{fileSize}/{fileDuration}/{id}")
     ResponseEntity<String> updateStatusForProcess(
             @PathVariable("status") ProcessStatus status,
             @PathVariable("fileSize") String fileSize,
