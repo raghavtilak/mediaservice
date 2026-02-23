@@ -174,7 +174,7 @@ public class MediaServiceImpl implements MediaService {
         List<String> command = new ArrayList<>();
         command.add(ffmpegExePath);
 
-        command.addAll(Arrays.asList(rawCommand.split(" ")));
+        command.addAll(Arrays.asList(rawCommand.split("\\s+")));
 
         log.info("Executing FFmpeg command: {}", String.join(" ", command));
 
