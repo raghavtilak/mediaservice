@@ -19,7 +19,7 @@ public class KillListener {
     // "#{killQueue.name}" — Spring EL that reads the name of the AnonymousQueue
     // bean
     // since the name is random, you can't hardcode it, so you reference the bean
-    @RabbitListener(queues = "#{killQueue.name}", errorHandler = "killListenerErrorHandler")
+    @RabbitListener(queues = "#{killQueue.name}")
     public void handleKill(String processId) {
         log.info("Request received for process kill, processId:{}", processId);
         try {
