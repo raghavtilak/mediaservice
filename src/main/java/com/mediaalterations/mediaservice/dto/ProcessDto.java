@@ -1,25 +1,25 @@
 package com.mediaalterations.mediaservice.dto;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 public record ProcessDto(
 
-        UUID id,
+                UUID id,
 
-        String storageIdInput,
-        String storageIdOutput,
-        String storageInputPath,
-        String storageOutputPath,
+                // storageIdInput , storageInputPath
+                Map<String, String> storageInputDetails,
+                String storageIdOutput,
+                String storageOutputPath,
 
-        String fileName,
-        String finalFileSize,
-        String command,
+                String fileName,
+                String finalFileSize,
+                String command,
 
-        ProcessStatus status,
+                ProcessStatus status,
 
-        String userId,
+                String userId,
 
-        LocalDateTime created_at
-) {
+                LocalDateTime created_at) {
 }

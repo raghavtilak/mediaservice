@@ -31,8 +31,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.concurrent.*;
 
 @RequiredArgsConstructor
@@ -67,35 +69,48 @@ public class MediaServiceImpl implements MediaService {
     @Override
     public void workOnProcess(ProcessDto processDto) {
 
-        log.info("Starting media processing. processId={}, inputPath={}",
-                processDto.id(), processDto.storageInputPath());
+        log.info("Starting media processing. processId={}",
+                processDto.id());
 
         FfmpegCmdResponse ffmpegCmdRes = new FfmpegCmdResponse(-1L, processDto.id().toString(), 0, "00:00:00:00.0000",
                 "0 KB", ProcessStatus.WAITING);
 
-        Path tempInput = null;
+        ArrayList<Path> tempInputs = new ArrayList<>();
         Path tempOutput = null;
 
         try {
 
-            // Download input file from Garage to temp location
-            tempInput = downloadFromGarage(uploadsBucket, downloadsBucket, processDto.storageInputPath());
-            log.info("Temporary Input Path: {}", tempInput);
-
             tempOutput = Files.createTempFile("output-", processDto.fileName().substring(
                     processDto.fileName().lastIndexOf('.')));
             log.info("Temporary Output Path: {}", tempOutput);
+            String updatedCommand = "";
 
-            String updatedCommand = processDto.command()
-                    .replace(processDto.storageInputPath(), tempInput.toString())
-                    .replace(processDto.storageOutputPath(), tempOutput.toString());
-            log.info("Replacing the input/output paths in the command with temp paths: {}", updatedCommand);
+            for (Map.Entry<String, String> entry : processDto.storageInputDetails().entrySet()) {
 
-            double durationSeconds = probeAndParse(tempInput.toString());
+                String storageId = entry.getKey();
+                String storagePath = entry.getValue();
+
+                log.info("Storage ID: {}, Storage Path: {}", storageId, storagePath);
+
+                Path tempInput = downloadFromGarage(uploadsBucket, downloadsBucket, storagePath);
+                log.info("Temporary Input Path: {}", tempInput);
+
+                tempInputs.add(tempInput);
+
+                // Replace storage path with temp path
+                updatedCommand = updatedCommand.replace(
+                        storagePath,
+                        tempInput.toString());
+            }
+
+            log.info("Transformed command with temp paths: {}", updatedCommand);
+
+            double durationSeconds = tempInputs.stream().mapToDouble(a -> probeAndParse(a.toString())).sum();
             long totalDurationMs = (long) (durationSeconds * 1000);
             log.info("Total Duration: {}", totalDurationMs);
 
-            List<String> command = buildCommand(updatedCommand);
+            List<String> command = buildCommand(
+                    updatedCommand.replace(processDto.storageOutputPath(), tempOutput.toString()));
 
             boolean success = executeWithProgress(
                     command,
@@ -154,7 +169,8 @@ public class MediaServiceImpl implements MediaService {
             throw new MediaProcessingException("Media processing failed", ex);
         } finally {
             // Clean up temp files
-            deleteTempFile(tempInput);
+            tempInputs.forEach(this::deleteTempFile);
+            // deleteTempFile(tempInput);
             deleteTempFile(tempOutput);
         }
     }
@@ -329,7 +345,7 @@ public class MediaServiceImpl implements MediaService {
 
     // ===================== PARSE =====================
 
-    public double probeAndParse(String inputPath) {
+    public Double probeAndParse(String inputPath) {
 
         String output = probe(inputPath);
 
