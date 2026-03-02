@@ -83,7 +83,7 @@ public class MediaServiceImpl implements MediaService {
             tempOutput = Files.createTempFile("output-", processDto.fileName().substring(
                     processDto.fileName().lastIndexOf('.')));
             log.info("Temporary Output Path: {}", tempOutput);
-            String updatedCommand = "";
+            String updatedCommand = processDto.command();
 
             for (Map.Entry<String, String> entry : processDto.storageInputDetails().entrySet()) {
 
